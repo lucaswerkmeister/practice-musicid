@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# declare files and their short keys (which the user will later enter)
+declare -A files=(
+    [rach2-1]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 01 - Piano Concerto no. 2 in C minor, op. 18: I. Moderato.flac'
+    [rach2-2]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 02 - Piano Concerto no. 2 in C minor, op. 18: II. Adagio sostenuto.flac'
+    [rach2-3]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 03 - Piano Concerto no. 2 in C minor, op. 18: III. Allegro scherzando.flac'
+    [tchaik1-1]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 04 - Piano Concerto no. 1 in B-flat minor, op. 23: I. Allegro non troppo e molto maestoso – Allegro con spirito.flac'
+    [tchaik1-2]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 05 - Piano Concerto no. 1 in B-flat minor, op. 23: II. Andantino semplice – Prestissimo – Tempo I.flac'
+    [tchaik1-3]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 06 - Piano Concerto no. 1 in B-flat minor, op. 23: III. Allegro con fuoco.flac'
+)
+keys=("${!files[@]}")
+
+while true; do
+    # pick a random file
+    key=${keys[RANDOM%${#keys[@]}]}
+    file=${files["$key"]}
+    # get its duration
+    duration=$(LC_ALL=C ffprobe -i "$file" -show_entries format=duration -v quiet -of csv=p=0) # https://stackoverflow.com/a/22243834/1420237
+    if [[ ! $duration ]]; then
+        printf 'Invalid duration for key %s (file %s)! Does the file exist?\n' "$key" "$file"
+        continue
+    fi
+    # pick a random offset in the file
+    max_duration=30
+    offset=$(LC_ALL=C bc <<< "scale=10; ($SRANDOM / 2^32) * ($duration - $max_duration)")
+    # play the file at that offset in the background
+    # (-autoexit exits when done, -nodisp hides window, -loglevel quiet disables *almost* all output, > /dev/null hides final newline)
+    ffplay -ss "${offset}s" -t "${max_duration}s" -autoexit -nodisp -loglevel quiet -i "$file" > /dev/null &
+
+    printf 'Which of these is it?\n'
+    printf '• %s\n' "${keys[@]}"
+    printf '\n'
+
+    IFS= read -r -p'> ' reply
+    # kill background ffplay if user replied before it finished
+    kill %%
+    if [[ $reply = 'quit' ]]; then
+        break
+    elif [[ $reply = $key ]]; then
+        printf 'Correct! 🎉\n\n'
+    else
+        printf 'No, sorry, it was %s%s%s.\n\n' "$(tput bold)" "$key" "$(tput sgr0)"
+    fi
+done
