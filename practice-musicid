@@ -1,5 +1,41 @@
 #!/usr/bin/env bash
 
+max_duration=30
+if ! tmp=$(getopt -o 't:h' --long 'duration:,help' -n "$0" -- "$@"); then
+    exit 1
+fi
+eval set -- "$tmp"
+unset tmp
+while true; do
+    case "$1" in
+        '-t'|'--duration')
+            if [[ $2 =~ ^(([1-9][0-9]*)h)?(([1-9][0-9]?)m)?([1-9][0-9]?(\.[0-9]*)?)s?$ ]]; then
+                hours=${BASH_REMATCH[2]:-0}
+                minutes=${BASH_REMATCH[4]:-0}
+                seconds=${BASH_REMATCH[5]}
+                max_duration=$(LC_ALL=C bc <<< "($hours * 60 + $minutes) * 60 + $seconds")
+                unset hours minutes seconds
+            else
+                printf >&2 '%s: invalid duration: %s\n' "$0" "$2"
+                exit 1
+            fi
+            shift 2
+            continue
+            ;;
+        '-h'|'--help')
+            printf 'Usage: %s [-t|--duration DURATION]\n' "$0"
+            printf 'The game will repeatedly play a random snippet (up to DURATION)\n'
+            printf 'of a random music file and ask you to identify the file.\n'
+            printf 'Exit with Ctrl-C.\n'
+            exit 0
+            ;;
+        '--')
+            shift
+            break
+            ;;
+    esac
+done
+
 # declare files and their short keys (which the user will later enter)
 declare -A files=(
     [rach2-1]='/home/lucas/Music/Sergei Rachmaninoff, Pyotr Ilyich Tchaikovsky; Sviatoslav Richter, Stanisław Wisłocki, Herbert von Karajan/Rachmaninov: Piano Concerto no. 2 - Tchaikovsky: Piano Concerto no. 1/Disc 1 - 01 - Piano Concerto no. 2 in C minor, op. 18: I. Moderato.flac'
@@ -22,7 +58,6 @@ while true; do
         continue
     fi
     # pick a random offset in the file
-    max_duration=30
     offset=$(LC_ALL=C bc <<< "scale=10; ($SRANDOM / 2^32) * ($duration - $max_duration)")
     # play the file at that offset in the background
     # (-autoexit exits when done, -nodisp hides window, -loglevel quiet disables *almost* all output, > /dev/null hides final newline)
