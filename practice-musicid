@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 gamebasedir=${XDG_CONFIG_HOME:-~/.config}/practice-musicid/
+bold=$'\e[1m'
+sgr0=$'\e[0m'
 
 max_duration=30
 if ! tmp=$(getopt -o 't:h' --long 'duration:,help' -n "$0" -- "$@"); then
@@ -78,8 +80,8 @@ while true; do
     if [[ $reply = 'quit' ]]; then
         break
     elif [[ $reply = $file ]]; then
-        printf 'Correct! 🎉\n\n'
+        printf 'Correct, it was %s%s%s! 🎉\n\n' "$bold" "$file" "$sgr0"
     else
-        printf 'No, sorry, it was %s%s%s.\n\n' "$(tput bold)" "$file" "$(tput sgr0)"
+        printf 'No, sorry, it was %s%s%s.\n\n' "$bold" "$file" "$sgr0"
     fi
 done
