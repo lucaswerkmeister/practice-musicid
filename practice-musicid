@@ -106,6 +106,10 @@ while true; do
         fi
         break
     else
-        printf 'No, sorry, it was %s%s%s.\n\n' "$bold" "$file" "$sgr0"
+        printf 'Sorry, that’s not correct. Here’s %s%s%s again (press any key to continue):\n' "$bold" "$file" "$sgr0"
+        ffplay -ss "${offset}s" -t "${max_duration}s" -autoexit -nodisp -loglevel quiet -i "$file" > /dev/null &
+        IFS= read -r -N1 -s ignored
+        kill %%
+        printf '\n'
     fi
 done
