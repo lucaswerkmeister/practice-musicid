@@ -74,7 +74,21 @@ while true; do
     printf '• %s\n' "${files[@]}"
     printf '\n'
 
-    IFS= read -r -p'> ' reply
+    while true; do
+        IFS= read -r -p'> ' reply
+
+        if [[ $reply = 'quit' || $reply = $file ]]; then
+            break
+        fi
+        for otherfile in "${files[@]}"; do
+            if [[ $reply = $otherfile ]]; then
+                break 2
+            fi
+        done
+
+        printf 'That doesn’t look like a valid answer, try again.\n'
+    done
+
     # kill background ffplay if user replied before it finished
     kill %%
     if [[ $reply = 'quit' ]]; then
