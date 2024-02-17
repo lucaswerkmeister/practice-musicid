@@ -32,7 +32,7 @@ while true; do
             printf 'of a random music file in DIRECTORY (default "default"),\n'
             printf 'which should be a subdirectory of %s,\n' "$gamebasedir"
             printf 'and ask you to identify the file.\n'
-            printf 'Exit with Ctrl-C.\n'
+            printf 'Exit with "quit" or "q".\n'
             exit 0
             ;;
         '--')
@@ -54,6 +54,12 @@ if ((${#files[@]} == 0)); then
     printf >&2 '%s: directory is empty: %s\n' "$0" "$gamedir"
     exit 1
 fi
+
+for specialfile in q quit; do
+    if [[ -e $specialfile ]]; then
+        printf >&2 '%s: warning: “%s” has a special meaning and should not be used as a regular file name\n' "$0" "$specialfile"
+    fi
+done
 
 while true; do
     # pick a random file
@@ -77,7 +83,7 @@ while true; do
     while true; do
         IFS= read -r -p'> ' reply
 
-        if [[ $reply = 'quit' || $reply = $file ]]; then
+        if [[ $reply = '' || $reply = 'q' || $reply = 'quit' || $reply = $file ]]; then
             break
         fi
         for otherfile in "${files[@]}"; do
@@ -91,10 +97,14 @@ while true; do
 
     # kill background ffplay if user replied before it finished
     kill %%
-    if [[ $reply = 'quit' ]]; then
-        break
-    elif [[ $reply = $file ]]; then
+    if [[ $reply = $file ]]; then
         printf 'Correct, it was %s%s%s! 🎉\n\n' "$bold" "$file" "$sgr0"
+    elif [[ $reply = '' || $reply = 'q' || $reply = 'quit' ]]; then
+        if [[ $reply == '' ]]; then
+            # ensure we leave at the beginning of a line after Ctrl+D
+            printf '\n'
+        fi
+        break
     else
         printf 'No, sorry, it was %s%s%s.\n\n' "$bold" "$file" "$sgr0"
     fi
