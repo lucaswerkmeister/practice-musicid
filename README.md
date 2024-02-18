@@ -60,6 +60,9 @@ If you identified it correctly, the game starts again with a new file.
 If you identified it incorrectly, the game will tell you what it actually was,
 and then play it again from the same position so you can remember it.
 
+To quit, reply “q” or “quit” instead of the short name of a music file,
+or use Ctrl+D or Ctrl+C.
+
 If you want to always listen to the music files from the beginning,
 pass the `-n` option (or `--no-random-start`),
 e.g. `./practice-musicid -n star-wars-opening`.
