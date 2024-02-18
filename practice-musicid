@@ -5,7 +5,8 @@ bold=$'\e[1m'
 sgr0=$'\e[0m'
 
 max_duration=30
-if ! tmp=$(getopt -o 't:h' --long 'duration:,help' -n "$0" -- "$@"); then
+random_start=1
+if ! tmp=$(getopt -o 't:nh' --long 'duration:,no-random-start,help' -n "$0" -- "$@"); then
     exit 1
 fi
 eval set -- "$tmp"
@@ -24,6 +25,11 @@ while true; do
                 exit 1
             fi
             shift 2
+            continue
+            ;;
+        '-n'|'--no-random-start')
+            random_start=
+            shift
             continue
             ;;
         '-h'|'--help')
@@ -64,14 +70,19 @@ done
 while true; do
     # pick a random file
     file=${files[RANDOM%${#files[@]}]}
-    # get its duration
-    duration=$(LC_ALL=C ffprobe -i "$file" -show_entries format=duration -v quiet -of csv=p=0) # https://stackoverflow.com/a/22243834/1420237
-    if [[ ! $duration ]]; then
-        printf 'Invalid duration for file %s! Does the file exist?\n' "$file"
-        continue
+    if [[ $random_start ]]; then
+        # get its duration
+        duration=$(LC_ALL=C ffprobe -i "$file" -show_entries format=duration -v quiet -of csv=p=0) # https://stackoverflow.com/a/22243834/1420237
+        if [[ ! $duration ]]; then
+            printf 'Invalid duration for file %s! Does the file exist?\n' "$file"
+            continue
+        fi
+        # pick a random offset in the file
+        offset=$(LC_ALL=C bc <<< "scale=10; ($SRANDOM / 2^32) * ($duration - $max_duration)")
+    else
+        # start at the beginning
+        offset=0
     fi
-    # pick a random offset in the file
-    offset=$(LC_ALL=C bc <<< "scale=10; ($SRANDOM / 2^32) * ($duration - $max_duration)")
     # play the file at that offset in the background
     # (-autoexit exits when done, -nodisp hides window, -loglevel quiet disables *almost* all output, > /dev/null hides final newline)
     ffplay -ss "${offset}s" -t "${max_duration}s" -autoexit -nodisp -loglevel quiet -i "$file" > /dev/null &
